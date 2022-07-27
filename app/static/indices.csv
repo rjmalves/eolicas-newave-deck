@@ -1,0 +1,6 @@
+EOLICA-CADASTRO ; ; eolica-cadastro.csv
+EOLICA-SUBMERCADO ; ; eolica-submercado.csv
+EOLICA-HISTORICO ; ; hist-ventos.csv
+EOLICA-CONFIGURACAO ; ; eolica-config.csv
+EOLICA-GERACAO ; ; eolica-geracao.csv
+EOLICA-FUNCAO-PRODUCAO-VENTO-POTENCIA-LINEAR ; ; eolica-fte.csv

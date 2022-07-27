@@ -1,0 +1,4 @@
+pandas
+inewave==0.0.65
+python-dotenv
+click
