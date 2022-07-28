@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from os import chdir, curdir
-import re
 from typing import Dict
 from pathlib import Path
 
@@ -9,9 +8,6 @@ from app.adapters.repository.newave import (
     AbstractNewaveRepository,
     FSNewaveRepository,
 )
-
-
-NEWAVE_OUT_ZIP_PATTERN = "saidas_.*zip"
 
 
 class AbstractNewaveUnitOfWork(ABC):
@@ -32,13 +28,17 @@ class AbstractNewaveUnitOfWork(ABC):
 
 
 class FSNewaveUnitOfWork(AbstractNewaveUnitOfWork):
-    def __init__(self, path: str):
+    def __init__(self, path: str, caso: str, encoding_script: str):
         self._current_path = Path(curdir).resolve()
         self._newave_path = path
+        self._caso = caso
+        self._encoding_script = encoding_script
 
     def __enter__(self) -> "FSNewaveUnitOfWork":
         chdir(self._newave_path)
-        self._newave = FSNewaveRepository(self._newave_path)
+        self._newave = FSNewaveRepository(
+            self._newave_path, self._caso, self._encoding_script
+        )
         return super().__enter__()
 
     def __exit__(self, *args):

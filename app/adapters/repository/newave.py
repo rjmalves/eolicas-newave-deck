@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Dict
+import pathlib
+from app.utils.encoding import convert_encoding
 
 from inewave.newave.caso import Caso
 from inewave.newave.arquivos import Arquivos
@@ -13,18 +15,15 @@ from inewave.newave.eolicafte import EolicaFTE
 from inewave.newave.eolicahistorico import EolicaHistorico
 from inewave.newave.eolicageracao import EolicaGeracao
 
-from cfinterface.components.defaultregister import DefaultRegister
-from cfinterface.data.registerdata import RegisterData
-
 
 class AbstractNewaveRepository(ABC):
-    @abstractmethod
     @property
+    @abstractmethod
     def caso(self) -> Caso:
         raise NotImplementedError
 
-    @abstractmethod
     @property
+    @abstractmethod
     def arquivos(self) -> Arquivos:
         raise NotImplementedError
 
@@ -86,13 +85,14 @@ class AbstractNewaveRepository(ABC):
 
 
 class FSNewaveRepository(AbstractNewaveRepository):
-    def __init__(self, path: str):
+    def __init__(self, path: pathlib.Path, caso: str, encoding_script: str):
         self.__path = path
-        self.__caso = Caso.le_arquivo(self.__path)
+        self.__caso = Caso.le_arquivo(self.__path, caso)
+        self.__encoding_script = encoding_script
         self.__arquivos = None
 
     @property
-    def caminho(self) -> str:
+    def caminho(self) -> pathlib.Path:
         return self.__path
 
     @property
@@ -108,22 +108,57 @@ class FSNewaveRepository(AbstractNewaveRepository):
         return self.__arquivos
 
     def get_dger(self) -> DGer:
+        convert_encoding(
+            self.__path.joinpath(self.arquivos.dger), self.__encoding_script
+        )
         return DGer.le_arquivo(self.__path, self.arquivos.dger)
 
     def set_dger(self, d: DGer):
         d.escreve_arquivo(self.__path, self.__arquivos.dger)
 
     def get_patamar(self) -> Patamar:
+        convert_encoding(
+            self.__path.joinpath(self.arquivos.patamar), self.__encoding_script
+        )
         return Patamar.le_arquivo(self.__path, self.arquivos.patamar)
 
     def set_patamar(self, d: Patamar):
         d.escreve_arquivo(self.__path, self.__arquivos.patamar)
 
     def get_sistema(self) -> Sistema:
+        convert_encoding(
+            self.__path.joinpath(self.arquivos.sistema), self.__encoding_script
+        )
         return Sistema.le_arquivo(self.__path, self.arquivos.sistema)
 
     def set_sistema(self, d: Sistema):
         d.escreve_arquivo(self.__path, self.__arquivos.sistema)
+
+    def get_eolicacadastro(self) -> EolicaCadastro:
+        return EolicaCadastro.le_arquivo(self.__path, "eolica-cadastro.csv")
+
+    def set_eolicacadastro(self, d: EolicaCadastro):
+        d.escreve_arquivo(self.__path, "eolica-cadastro.csv")
+
+    def set_eolicaconfiguracao(self, d: EolicaConfiguracao):
+        d.escreve_arquivo(self.__path, "eolica-config.csv")
+
+    def get_eolicasubmercado(self) -> EolicaSubmercado:
+        return EolicaSubmercado.le_arquivo(
+            self.__path, "eolica-submercado.csv"
+        )
+
+    def set_eolicasubmercado(self, d: EolicaSubmercado):
+        d.escreve_arquivo(self.__path, "eolica-submercado.csv")
+
+    def set_eolicafte(self, d: EolicaFTE):
+        d.escreve_arquivo(self.__path, "eolica-fte.csv")
+
+    def set_eolicageracao(self, d: EolicaGeracao):
+        d.escreve_arquivo(self.__path, "eolica-geracao.csv")
+
+    def set_histventos(self, d: EolicaHistorico):
+        d.escreve_arquivo(self.__path, "hist-ventos.csv")
 
 
 def factory(kind: str, *args, **kwargs) -> AbstractNewaveRepository:

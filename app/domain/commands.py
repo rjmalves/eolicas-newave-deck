@@ -18,12 +18,27 @@ class AddFileToZip:
 
 @dataclass
 class ProcessDgerData:
+    parpmodel: int
+    orderreduction: int
     generatewind: int
     windcutpenalty: float
+    crosscorrelation: int
+    swirlingconstraints: int
+    defluenceconstraints: int
+
+
+@dataclass
+class ValidatePatamarData:
+    windblock: int
 
 
 @dataclass
 class ProcessPatamarData:
+    windblock: int
+
+
+@dataclass
+class ValidateSistemaData:
     windblock: int
 
 
@@ -39,20 +54,11 @@ class GenerateEolicaCadastro:
     pre_study_horizon: int
     study_horizon: int
     post_study_horizon: int
-    clustersdir: str
-    clustersfile: str
-    installedcapacityfile: str
-    tmpdir: str
-    outputfile: str
 
 
 @dataclass
 class GenerateEolicaSubmercado:
-    clustersdir: str
-    clustersfile: str
-    tmpdir: str
-    eolicacadastrofile: str
-    outputfile: str
+    pass
 
 
 @dataclass
@@ -62,11 +68,6 @@ class GenerateEolicaConfig:
     pre_study_horizon: int
     study_horizon: int
     post_study_horizon: int
-    clustersdir: str
-    clustersfile: str
-    tmpdir: str
-    eolicacadastrofile: str
-    outputfile: str
 
 
 @dataclass
@@ -76,20 +77,11 @@ class GenerateEolicaFTE:
     pre_study_horizon: int
     study_horizon: int
     post_study_horizon: int
-    clustersdir: str
-    ftmfile: str
-    tmpdir: str
-    eolicacadastrofile: str
-    outputfile: str
 
 
 @dataclass
 class GenerateEolicaHistorico:
-    clustersdir: str
-    averagewindfile: str
-    tmpdir: str
-    eolicacadastrofile: str
-    outputfile: str
+    pass
 
 
 @dataclass
@@ -99,8 +91,5 @@ class GenerateEolicaGeracao:
     pre_study_horizon: int
     study_horizon: int
     post_study_horizon: int
+    numblocks: int
     patamardata: pd.DataFrame
-    tmpdir: str
-    eolicacadastrofile: str
-    eolicasubmercadofile: str
-    outputfile: str

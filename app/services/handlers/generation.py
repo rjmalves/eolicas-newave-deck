@@ -1,7 +1,9 @@
 from app.models.settings import Settings
 import app.domain.commands as commands
+from app.utils.log import Log
 import pathlib
-from app.services.unitofwork.newave import factory
+from app.services.unitofwork.newave import factory as nw_factory
+from app.services.unitofwork.clusters import factory as clusters_factory
 from app.services.handlers.files import compress_file, extract_file
 from app.services.handlers.processing import (
     process_dger_data,
@@ -14,32 +16,66 @@ from app.services.handlers.processing import (
     generate_eolicahistorico,
     generate_eolicageracao,
 )
+from app.services.handlers.validation import (
+    validate_patamar_data,
+    validate_sistema_data,
+    validate_cluster_files,
+)
 
 
 class GenerationHandler:
     def __init__(self, settings: Settings):
         self._settings = settings
+        self._scriptpath = (
+            pathlib.Path(self._settings.basedir)
+            .resolve()
+            .joinpath(self._settings.encoding_convert_script)
+        )
         self._zippath = (
             pathlib.Path(self._settings.basedir)
             .resolve()
             .joinpath(self._settings.newave_deck_zip)
         )
-        self._uow = factory("FS", self._zippath.parent)
+        self._tmppath = pathlib.Path(self._settings.tmpdir)
+        self._clusterspath = pathlib.Path(self._settings.clustersdir)
+        # Extracts "caso.dat"
+        command = commands.ExtractZipFile(
+            self._zippath, self._settings.tmpdir, self._settings.caso_file
+        )
+        extract_file(command)
+        # Instantiates UoW
+        self._uow = nw_factory(
+            "FS",
+            self._zippath.parent,
+            self._settings.caso_file,
+            self._scriptpath,
+        )
+        self._tmpuow = nw_factory(
+            "FS", self._tmppath, self._settings.caso_file, self._scriptpath
+        )
+        self._clustersuow = clusters_factory(
+            "FS",
+            self._clusterspath,
+            self._settings.clusters_file,
+            self._settings.installed_capacity_file,
+            self._settings.ftm_file,
+            self._settings.average_wind_file,
+        )
 
     def extract_files_from_deck(self):
         # Extracts "arquivos.dat"
-        with self._uow:
-            arquivos_filename = self._uow.newave.caso.arquivos
+        with self._tmpuow:
+            arquivos_filename = self._tmpuow.newave.caso.arquivos
         command = commands.ExtractZipFile(
             self._zippath, self._settings.tmpdir, arquivos_filename
         )
         extract_file(command)
         # Extracts the other necessary files
-        with self._uow:
+        with self._tmpuow:
             files_to_extract = [
-                self._uow.newave.arquivos.dger,
-                self._uow.newave.arquivos.sistema,
-                self._uow.newave.arquivos.patamar,
+                self._tmpuow.newave.arquivos.dger,
+                self._tmpuow.newave.arquivos.sistema,
+                self._tmpuow.newave.arquivos.patamar,
             ]
         for f in files_to_extract:
             command = commands.ExtractZipFile(
@@ -49,7 +85,13 @@ class GenerationHandler:
 
     def process_deck_data(self):
         dger_command = commands.ProcessDgerData(
-            self._settings.generatewind, self._settings.windcutpenalty
+            self._settings.parpmodel,
+            self._settings.orderreduction,
+            self._settings.generatewind,
+            self._settings.windcutpenalty,
+            self._settings.crosscorrelation,
+            self._settings.swirlingconstraints,
+            self._settings.defluenceconstraints,
         )
         patamar_command = commands.ProcessPatamarData(
             self._settings.nonsimulatedblock
@@ -57,9 +99,13 @@ class GenerationHandler:
         sistema_command = commands.ProcessSistemaData(
             self._settings.nonsimulatedblock
         )
-        self._dger_data = process_dger_data(dger_command, self._uow)
-        self._patamar_data = process_patamar_data(patamar_command, self._uow)
-        self._sistema_data = process_sistema_data(sistema_command, self._uow)
+        self._dger_data = process_dger_data(dger_command, self._tmpuow)
+        self._patamar_count, self._patamar_data = process_patamar_data(
+            patamar_command, self._tmpuow
+        )
+        self._sistema_data = process_sistema_data(
+            sistema_command, self._tmpuow
+        )
 
     def __generate_eolicacadastro(self):
         comando = commands.GenerateEolicaCadastro(
@@ -68,23 +114,12 @@ class GenerationHandler:
             self._dger_data.pre_study_horizon,
             self._dger_data.study_horizon,
             self._dger_data.post_study_horizon,
-            self._settings.clustersdir,
-            self._settings.clusters_file,
-            self._settings.installed_capacity_file,
-            self._settings.tmpdir,
-            self._settings.eolicacadastro_file,
         )
-        generate_eolicacadastro(comando, self._uow)
+        generate_eolicacadastro(comando, self._tmpuow, self._clustersuow)
 
     def __generate_eolicasubmercado(self):
-        comando = commands.GenerateEolicaSubmercado(
-            self._settings.clustersdir,
-            self._settings.clusters_file,
-            self._settings.tmpdir,
-            self._settings.eolicacadastro_file,
-            self._settings.eolicasubmercado_file,
-        )
-        generate_eolicasubmercado(comando, self._uow)
+        comando = commands.GenerateEolicaSubmercado()
+        generate_eolicasubmercado(comando, self._tmpuow, self._clustersuow)
 
     def __generate_eolicaconfig(self):
         comando = commands.GenerateEolicaConfig(
@@ -93,13 +128,8 @@ class GenerationHandler:
             self._dger_data.pre_study_horizon,
             self._dger_data.study_horizon,
             self._dger_data.post_study_horizon,
-            self._settings.clustersdir,
-            self._settings.clusters_file,
-            self._settings.tmpdir,
-            self._settings.eolicacadastro_file,
-            self._settings.eolicaconfig_file,
         )
-        generate_eolicaconfig(comando, self._uow)
+        generate_eolicaconfig(comando, self._tmpuow, self._clustersuow)
 
     def __generate_eolicafte(self):
         comando = commands.GenerateEolicaFTE(
@@ -108,23 +138,12 @@ class GenerationHandler:
             self._dger_data.pre_study_horizon,
             self._dger_data.study_horizon,
             self._dger_data.post_study_horizon,
-            self._settings.clustersdir,
-            self._settings.ftm_file,
-            self._settings.tmpdir,
-            self._settings.eolicacadastro_file,
-            self._settings.eolicafte_file,
         )
-        generate_eolicafte(comando, self._uow)
+        generate_eolicafte(comando, self._tmpuow, self._clustersuow)
 
     def __generate_eolicahistorico(self):
-        comando = commands.GenerateEolicaHistorico(
-            self._settings.clustersdir,
-            self._settings.average_wind_file,
-            self._settings.tmpdir,
-            self._settings.eolicacadastro_file,
-            self._settings.histventos_file,
-        )
-        generate_eolicahistorico(comando, self._uow)
+        comando = commands.GenerateEolicaHistorico()
+        generate_eolicahistorico(comando, self._tmpuow, self._clustersuow)
 
     def __generate_eolicageracao(self):
         comando = commands.GenerateEolicaGeracao(
@@ -133,13 +152,10 @@ class GenerationHandler:
             self._dger_data.pre_study_horizon,
             self._dger_data.study_horizon,
             self._dger_data.post_study_horizon,
+            self._patamar_count,
             self._patamar_data.blocks,
-            self._settings.tmpdir,
-            self._settings.eolicacadastro_file,
-            self._settings.eolicasubmercado_file,
-            self._settings.eolicageracao_file,
         )
-        generate_eolicageracao(comando, self._uow)
+        generate_eolicageracao(comando, self._tmpuow, self._clustersuow)
 
     def generate_deck_newfiles(self):
         self.__generate_eolicacadastro()
@@ -159,11 +175,11 @@ class GenerationHandler:
         )
         compress_file(command)
         # Generated during execution
-        with self._uow:
+        with self._tmpuow:
             files_to_compress = [
-                self._uow.newave.arquivos.dger,
-                self._uow.newave.arquivos.sistema,
-                self._uow.newave.arquivos.patamar,
+                self._tmpuow.newave.arquivos.dger,
+                self._tmpuow.newave.arquivos.sistema,
+                self._tmpuow.newave.arquivos.patamar,
                 self._settings.eolicacadastro_file,
                 self._settings.eolicasubmercado_file,
                 self._settings.eolicaconfig_file,
@@ -178,18 +194,61 @@ class GenerationHandler:
             compress_file(command)
 
     def generate(self):
-        # Extracts files from the deck zip
-        self.extract_files_from_deck()
+        if not self.validate():
+            return
         # Reads essential information
         # Edits existing files
+        Log.log().info(" ## PROCESSAMENTO DOS ARQUIVOS  ##")
         self.process_deck_data()
         # Generates each of the new deck files
         self.generate_deck_newfiles()
         # Adds new deck files to the zip
         self.compress_files_to_deck()
 
+    def validate(self) -> bool:
+        Log.log().info(" ## VALIDAÇÃO DOS ARQUIVOS  ##")
+        valid_patamar = validate_patamar_data(
+            commands.ValidatePatamarData(self._settings.nonsimulatedblock),
+            self._tmpuow,
+        )
+        valid_sistema = validate_sistema_data(
+            commands.ValidateSistemaData(self._settings.nonsimulatedblock),
+            self._tmpuow,
+        )
+        valid_clusters = validate_cluster_files(self._clustersuow)
+        valid = all([valid_patamar, valid_sistema, valid_clusters])
+        if not valid:
+            Log.log().error(
+                "Validação dos arquivos não" + " concluída com sucesso."
+            )
+        else:
+            Log.log().info("Arquivos validados com sucesso")
+        return valid
+
+
+def __construct_handler() -> GenerationHandler:
+    settings = Settings()
+    Log.configure_logging(settings.basedir)
+    handler = GenerationHandler(settings)
+    return handler
+
+
+def __greet():
+    Log.log().info(
+        " #### APLICAÇÃO PARA PROCESSAMENTO DO "
+        + "DECK DE NEWAVE - GERAÇÃO EÓLICA ####"
+    )
+
+
+def validate():
+    handler = __construct_handler()
+    __greet()
+    handler.extract_files_from_deck()
+    handler.validate()
+
 
 def generate():
-    settings = Settings()
-    handler = GenerationHandler(settings)
+    handler = __construct_handler()
+    __greet()
+    handler.extract_files_from_deck()
     handler.generate()
