@@ -2,15 +2,16 @@ import click
 import tempfile
 import os
 from app.services.handlers.generation import generate, validate
-from app.models.settings import Settings
-from app.utils.log import Log
 
-DEFAULT_DECK_NAME = "deck.zip"
-DEFAULT_CLUSTERS_DIR = "/tmp/eolicas-newave-app/results"
+DEFAULT_CLUSTERS_DIR = "."
 
 
 @click.group()
 def cli():
+    """
+    Aplicação CLI para geração de decks de NEWAVE com informações
+    de clusters de usinas eólicas.
+    """
     pass
 
 
@@ -20,12 +21,16 @@ def cli():
     default=DEFAULT_CLUSTERS_DIR,
     help="diretório com os arquivos resultantes da clusterização",
 )
-@click.option(
-    "--deck",
-    default=DEFAULT_DECK_NAME,
-    help="arquivos de entrada do NEWAVE comprimidos em um .zip",
+@click.argument(
+    "deck",
 )
 def validatefiles(clusters, deck):
+    """
+    Valida o deck para o processamento. Confere se os arquivos necessários
+    estão no ZIP e se contém as informações necessárias no processamento.
+
+    DECK: arquivos de entrada do NEWAVE comprimidos em um .zip
+    """
     os.environ["CLUSTERSDIR"] = clusters
     os.environ["DECK"] = deck
     with tempfile.TemporaryDirectory() as tmpdirname:
@@ -39,12 +44,16 @@ def validatefiles(clusters, deck):
     default=DEFAULT_CLUSTERS_DIR,
     help="diretório com os arquivos resultantes da clusterização",
 )
-@click.option(
-    "--deck",
-    default=DEFAULT_DECK_NAME,
-    help="arquivos de entrada do NEWAVE comprimidos em um .zip",
+@click.argument(
+    "deck",
 )
 def generatedeck(clusters, deck):
+    """
+    Processa o deck, realiza as alterações necessárias e gera os arquivos
+    novos para consideração da geração eólica.
+
+    DECK: arquivos de entrada do NEWAVE comprimidos em um .zip
+    """
     os.environ["CLUSTERSDIR"] = clusters
     os.environ["DECK"] = deck
     with tempfile.TemporaryDirectory() as tmpdirname:

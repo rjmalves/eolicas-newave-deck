@@ -28,7 +28,8 @@ echo "Copiando arquivos necessários..."
 cp -r app/ $INSTALLDIR
 cp main.py $INSTALLDIR
 cp requirements.txt $INSTALLDIR
-cp run.sh $INSTALLDIR
+cp eolicas-newave-deck $INSTALLDIR
+cp eolicas-newave-deck.cfg $INSTALLDIR
 
 # Creates venv is not exists
 if [ ! -d $INSTALLDIR/venv ]; then
@@ -36,6 +37,16 @@ if [ ! -d $INSTALLDIR/venv ]; then
     python3 -m venv $INSTALLDIR/venv
 else
     echo "Ambiente virtual já existente..."
+fi
+
+# Checks if venv was created succesfully
+if [ ! -f $INSTALLDIR/venv/bin/activate ]; then
+    echo "Falha na criação do ambiente virtual"
+    echo "Limpando arquivos da instalação..."
+    rm -r $INSTALLDIR
+    exit 2
+else
+    echo "Ambiente virtual criado com sucesso"
 fi
 
 # Activates venv and installs requirements
@@ -52,6 +63,11 @@ else
     pip install -r requirements.txt
 fi
 
+# Copies the executable to a folder in the system's PATH
+[ ! -d $HOME/bin ] && mkdir $HOME/bin
+EXECPATH=$HOME/bin/eolicas-newave-deck
+echo "Copiando executável para ${EXECPATH}" 
+cp eolicas-newave-deck $EXECPATH
 
 # Deactivates venv
 echo "Finalizando instalação..."

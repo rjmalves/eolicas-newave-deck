@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Dict
+from typing import Dict, Type, Optional
 import pathlib
 from app.utils.encoding import convert_encoding
 
@@ -85,15 +85,15 @@ class AbstractNewaveRepository(ABC):
 
 
 class FSNewaveRepository(AbstractNewaveRepository):
-    def __init__(self, path: pathlib.Path, caso: str, encoding_script: str):
+    def __init__(self, path: str, caso: str, encoding_script: str):
         self.__path = path
-        self.__caso = Caso.le_arquivo(self.__path, caso)
+        self.__caso = Caso.le_arquivo(str(self.__path), caso)
         self.__encoding_script = encoding_script
-        self.__arquivos = None
+        self.__arquivos: Optional[Arquivos] = None
 
     @property
     def caminho(self) -> pathlib.Path:
-        return self.__path
+        return pathlib.Path(self.__path)
 
     @property
     def caso(self) -> Caso:
@@ -108,31 +108,40 @@ class FSNewaveRepository(AbstractNewaveRepository):
         return self.__arquivos
 
     def get_dger(self) -> DGer:
-        convert_encoding(
-            self.__path.joinpath(self.arquivos.dger), self.__encoding_script
-        )
+        if self.arquivos.dger is not None:
+            convert_encoding(
+                str(self.caminho.joinpath(self.arquivos.dger)),
+                self.__encoding_script,
+            )
         return DGer.le_arquivo(self.__path, self.arquivos.dger)
 
     def set_dger(self, d: DGer):
-        d.escreve_arquivo(self.__path, self.__arquivos.dger)
+        if self.arquivos.dger is not None:
+            d.escreve_arquivo(self.__path, self.arquivos.dger)
 
     def get_patamar(self) -> Patamar:
-        convert_encoding(
-            self.__path.joinpath(self.arquivos.patamar), self.__encoding_script
-        )
+        if self.arquivos.patamar is not None:
+            convert_encoding(
+                str(self.caminho.joinpath(self.arquivos.patamar)),
+                self.__encoding_script,
+            )
         return Patamar.le_arquivo(self.__path, self.arquivos.patamar)
 
     def set_patamar(self, d: Patamar):
-        d.escreve_arquivo(self.__path, self.__arquivos.patamar)
+        if self.arquivos.patamar is not None:
+            d.escreve_arquivo(self.__path, self.arquivos.patamar)
 
     def get_sistema(self) -> Sistema:
-        convert_encoding(
-            self.__path.joinpath(self.arquivos.sistema), self.__encoding_script
-        )
+        if self.arquivos.sistema is not None:
+            convert_encoding(
+                str(self.caminho.joinpath(self.arquivos.sistema)),
+                self.__encoding_script,
+            )
         return Sistema.le_arquivo(self.__path, self.arquivos.sistema)
 
     def set_sistema(self, d: Sistema):
-        d.escreve_arquivo(self.__path, self.__arquivos.sistema)
+        if self.arquivos.sistema is not None:
+            d.escreve_arquivo(self.__path, self.arquivos.sistema)
 
     def get_eolicacadastro(self) -> EolicaCadastro:
         return EolicaCadastro.le_arquivo(self.__path, "eolica-cadastro.csv")
@@ -162,7 +171,7 @@ class FSNewaveRepository(AbstractNewaveRepository):
 
 
 def factory(kind: str, *args, **kwargs) -> AbstractNewaveRepository:
-    mapping: Dict[str, AbstractNewaveRepository] = {
-        "FS": FSNewaveRepository(*args, **kwargs)
+    mapping: Dict[str, Type[AbstractNewaveRepository]] = {
+        "FS": FSNewaveRepository
     }
-    return mapping[kind]
+    return mapping[kind](*args, **kwargs)

@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from os import chdir, curdir
-from typing import Dict
+from typing import Dict, Type
 from pathlib import Path
 
 
@@ -34,7 +34,7 @@ class FSNewaveUnitOfWork(AbstractNewaveUnitOfWork):
         self._caso = caso
         self._encoding_script = encoding_script
 
-    def __enter__(self) -> "FSNewaveUnitOfWork":
+    def __enter__(self) -> "AbstractNewaveUnitOfWork":
         chdir(self._newave_path)
         self._newave = FSNewaveRepository(
             self._newave_path, self._caso, self._encoding_script
@@ -54,7 +54,7 @@ class FSNewaveUnitOfWork(AbstractNewaveUnitOfWork):
 
 
 def factory(kind: str, *args, **kwargs) -> AbstractNewaveUnitOfWork:
-    mappings: Dict[str, AbstractNewaveUnitOfWork] = {
+    mappings: Dict[str, Type[AbstractNewaveUnitOfWork]] = {
         "FS": FSNewaveUnitOfWork,
     }
     return mappings[kind](*args, **kwargs)

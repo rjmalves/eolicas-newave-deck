@@ -1,6 +1,7 @@
 from app.models.settings import Settings
 import app.domain.commands as commands
 from app.utils.log import Log
+from typing import Optional
 import pathlib
 from app.services.unitofwork.newave import factory as nw_factory
 from app.services.unitofwork.clusters import factory as clusters_factory
@@ -27,7 +28,7 @@ class GenerationHandler:
     def __init__(self, settings: Settings):
         self._settings = settings
         self._scriptpath = (
-            pathlib.Path(self._settings.basedir)
+            pathlib.Path(self._settings.installdir)
             .resolve()
             .joinpath(self._settings.encoding_convert_script)
         )
@@ -40,7 +41,7 @@ class GenerationHandler:
         self._clusterspath = pathlib.Path(self._settings.clustersdir)
         # Extracts "caso.dat"
         command = commands.ExtractZipFile(
-            self._zippath, self._settings.tmpdir, self._settings.caso_file
+            str(self._zippath), self._settings.tmpdir, self._settings.caso_file
         )
         extract_file(command)
         # Instantiates UoW
@@ -67,7 +68,7 @@ class GenerationHandler:
         with self._tmpuow:
             arquivos_filename = self._tmpuow.newave.caso.arquivos
         command = commands.ExtractZipFile(
-            self._zippath, self._settings.tmpdir, arquivos_filename
+            str(self._zippath), self._settings.tmpdir, arquivos_filename
         )
         extract_file(command)
         # Extracts the other necessary files
@@ -79,7 +80,7 @@ class GenerationHandler:
             ]
         for f in files_to_extract:
             command = commands.ExtractZipFile(
-                self._zippath, self._settings.tmpdir, f
+                str(self._zippath), self._settings.tmpdir, f
             )
             extract_file(command)
 
@@ -226,10 +227,14 @@ class GenerationHandler:
         return valid
 
 
-def __construct_handler() -> GenerationHandler:
-    settings = Settings()
-    Log.configure_logging(settings.basedir)
-    handler = GenerationHandler(settings)
+def __construct_handler() -> Optional[GenerationHandler]:
+    handler: Optional[GenerationHandler] = None
+    try:
+        settings = Settings()
+        Log.configure_logging(settings.basedir)
+        handler = GenerationHandler(settings)
+    except Exception as e:
+        print(f"Erro na leitura das configurações: {e}")
     return handler
 
 
@@ -240,15 +245,23 @@ def __greet():
     )
 
 
+def __farewell():
+    Log.log().info(" #### FIM DO PROCESSAMENTO ####")
+
+
 def validate():
     handler = __construct_handler()
-    __greet()
-    handler.extract_files_from_deck()
-    handler.validate()
+    if handler is not None:
+        __greet()
+        handler.extract_files_from_deck()
+        handler.validate()
+        __farewell()
 
 
 def generate():
     handler = __construct_handler()
-    __greet()
-    handler.extract_files_from_deck()
-    handler.generate()
+    if handler is not None:
+        __greet()
+        handler.extract_files_from_deck()
+        handler.generate()
+        __farewell()

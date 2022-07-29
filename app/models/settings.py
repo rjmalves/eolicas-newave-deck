@@ -10,7 +10,7 @@ class Settings(metaclass=Singleton):
         self.clustersdir = getenv("CLUSTERSDIR")
         self.tmpdir = getenv("TMPDIR")
         self.newave_deck_zip = getenv("DECK")
-        self.encoding_convert_script = getenv("SCRIPT_CONVERTE_CODIFICACAO")
+        self.encoding_convert_script = "app/static/encoding.sh"
         # Input files - clustering process
         self.clusters_file = getenv("ARQUIVO_CLUSTERS")
         self.installed_capacity_file = getenv("ARQUIVO_CAPACIDADE_INSTALADA")

@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from os import chdir, curdir
-import re
+from typing import Type
 from typing import Dict
 from pathlib import Path
 
@@ -44,7 +44,7 @@ class FSClustersUnitOfWork(AbstractClustersUnitOfWork):
         self._ftm_file = ftm_file
         self._average_wind_file = average_wind_file
 
-    def __enter__(self) -> "FSClustersUnitOfWork":
+    def __enter__(self) -> "AbstractClustersUnitOfWork":
         chdir(self._clusters_path)
         self._clusters = FSClustersRepository(
             self._clusters_file,
@@ -67,7 +67,7 @@ class FSClustersUnitOfWork(AbstractClustersUnitOfWork):
 
 
 def factory(kind: str, *args, **kwargs) -> AbstractClustersUnitOfWork:
-    mappings: Dict[str, AbstractClustersUnitOfWork] = {
+    mappings: Dict[str, Type[AbstractClustersUnitOfWork]] = {
         "FS": FSClustersUnitOfWork,
     }
     return mappings[kind](*args, **kwargs)

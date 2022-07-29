@@ -34,7 +34,7 @@ def run_terminal(
     return code, out_lines
 
 
-def __convert_encoding_windows(path: str) -> int:
+def __convert_encoding_windows(path: str) -> Optional[int]:
     converting_command = (
         f"Get-Content {path} | Out-File -encoding utf8 -filepath {path}"
     )
@@ -42,10 +42,10 @@ def __convert_encoding_windows(path: str) -> int:
     return c
 
 
-def __convert_encoding_unix(path: str, script: str) -> int:
+def __convert_encoding_unix(path: str, script: str) -> Optional[int]:
     _, out = run_terminal([f"file -i {path}"])
     cod = out[0].split("charset=")[1].strip()
-    c = 0
+    c: Optional[int] = 0
     if all([cod != "utf-8", cod != "us-ascii", cod != "binary"]):
         cod = cod.upper()
         c, _ = run_terminal([f"{script}" + f" {path} {cod}"])
@@ -55,9 +55,9 @@ def __convert_encoding_unix(path: str, script: str) -> int:
 
 def convert_encoding(path: str, script: str) -> int:
     platform = sys.platform
-    ret = 0
+    ret: Optional[int] = 0
     if platform in ["cygwin", "linux"]:
         ret = __convert_encoding_unix(path, script)
     elif platform in ["win32"]:
         ret = __convert_encoding_windows(path)
-    return ret
+    return ret if ret is not None else 255
