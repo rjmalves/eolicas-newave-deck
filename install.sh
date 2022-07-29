@@ -20,10 +20,8 @@ fi
 # Creates installation directory in /tmp
 echo "Criando diretório de instalação..." 
 USERINSTALLDIR=/usr/lib
-INSTALLPARENTDIR=${USERINSTALLDIR}/eolicas-newave
-[ ! -d $INSTALLPARENTDIR ] && mkdir $INSTALLPARENTDIR
 INSTALLDIR=${USERINSTALLDIR}/eolicas-newave/deck
-[ ! -d $INSTALLDIR ] && mkdir $INSTALLDIR
+[ ! -d $INSTALLDIR ] && mkdir -p $INSTALLDIR
 
 # Copies necessary files
 echo "Copiando arquivos necessários..."

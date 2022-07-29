@@ -122,7 +122,7 @@ Desativando o ambiente virtual
 
 ## Manual de Uso
 
-Informações mais detalhadas sobre o uso da aplicação podem ser encontradas no manual, disponível [aqui](https://github.com/rjmalves/eolicas-newave-deck/wiki/Manual-da-Aplica%C3%A7%C3%A3o).
+Informações mais detalhadas sobre o uso da aplicação podem ser encontradas no manual, disponível [aqui](https://github.com/rjmalves/eolicas-newave-deck/wiki).
 
 ## Desinstalação
 
