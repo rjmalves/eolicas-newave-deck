@@ -150,15 +150,18 @@ def generate_eolicacadastro(
     with clusters_uow:
         clusters = clusters_uow.clusters.get_clusters()
         installed_capacity = clusters_uow.clusters.get_installed_capacity()
-        installed_capacity["Data"] = pd.to_datetime(
-            installed_capacity["Data"], format="%Y-%m"
+        installed_capacity["data_hora"] = pd.to_datetime(
+            installed_capacity["data_hora"], format="%Y-%m"
         )
+        installed_capacity["data_hora"] = installed_capacity[
+            "data_hora"
+        ].apply(lambda dt: dt.replace(day=1))
     file = EolicaCadastro(data=RegisterData(DefaultRegister(data="")))
     # Adds EOLICA-CADASTRO
     for idx, line in clusters.iterrows():
         rc = RegistroEolicaCadastro()
         rc.codigo_eolica = idx + 1
-        rc.nome_eolica = str(line["Cluster"])
+        rc.nome_eolica = str(line["cluster"])
         rc.quantidade_conjuntos = 1
         file.append_registro(rc)
     # Adds EOLICA-CADASTRO-CONJUNTO-AEROGERADORES
@@ -166,7 +169,7 @@ def generate_eolicacadastro(
         rca = RegistroEolicaCadastroConjuntoAerogeradores()
         rca.codigo_eolica = idx + 1
         rca.indice_conjunto = 1
-        rca.nome_conjunto = str(line["Cluster"]) + "_1"
+        rca.nome_conjunto = str(line["cluster"]) + "_1"
         rca.quantidade_aerogeradores = 1
         file.append_registro(rca)
     # Adds EOLICA-CONJUNTO-AEROGERADORES-POTENCIAEFETIVA-PERIODO
@@ -188,9 +191,9 @@ def generate_eolicacadastro(
             rpe.periodo_final = fm
             rpe.potencia_efetiva = float(
                 installed_capacity.loc[
-                    (installed_capacity["Cluster"] == str(line["Cluster"]))
-                    & (installed_capacity["Data"] == im),
-                    "CapInst_acum",
+                    (installed_capacity["cluster"] == str(line["cluster"]))
+                    & (installed_capacity["data_hora"] == im),
+                    "capacidade_instalada",
                 ]
             )
             file.append_registro(rpe)
@@ -210,7 +213,7 @@ def generate_eolicasubmercado(
     for idx, line in clusters.iterrows():
         r = RegistroEolicaSubmercado()
         r.codigo_eolica = idx + 1
-        r.codigo_submercado = int(line["Submercado"])
+        r.codigo_submercado = int(line["submercado"])
         file.append_registro(r)
     with nw_uow:
         nw_uow.newave.set_eolicasubmercado(file)
@@ -258,7 +261,7 @@ def generate_eolicafte(
     )
     for _, line in ftm.iterrows():
         r = RegistroEolicaFTE()
-        rc = eolicacadastro.eolica_cadastro(nome_eolica=str(line["Cluster"]))
+        rc = eolicacadastro.eolica_cadastro(nome_eolica=str(line["cluster"]))
         assert isinstance(rc, RegistroEolicaCadastro)
         r.codigo_eolica = rc.codigo_eolica
         r.data_inicial = initial_month
@@ -299,19 +302,19 @@ def generate_eolicahistorico(
     file.append_registro(rh)
 
     for _, clusterline in clusters.iterrows():
-        clustername = str(clusterline["Cluster"])
+        clustername = str(clusterline["cluster"])
         rc = eolicacadastro.eolica_cadastro(nome_eolica=clustername)
         assert isinstance(rc, RegistroEolicaCadastro)
         code = rc.codigo_eolica
         clusterhistory = considered_history.loc[
-            considered_history["Cluster"] == clustername, :
+            considered_history["cluster"] == clustername, :
         ]
         for _, line in clusterhistory.iterrows():
             r = RegistroEolicaHistoricoVento()
             r.codigo_eolica = code
             r.data_inicial = line["data_hora"]
             r.data_final = line["data_hora"] + relativedelta(months=1)
-            r.velocidade = line["vento_medio"]
+            r.velocidade = line["vento"]
             r.direcao = 0.0
             file.append_registro(r)
     with nw_uow:
@@ -358,7 +361,7 @@ def generate_eolicageracao(
     ]
 
     for _, clusterline in clusters.iterrows():
-        clustername = str(clusterline["Cluster"])
+        clustername = str(clusterline["cluster"])
         rc = eolicacadastro.eolica_cadastro(nome_eolica=clustername)
         assert isinstance(rc, RegistroEolicaCadastro)
         code = rc.codigo_eolica

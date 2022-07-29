@@ -21,6 +21,10 @@ from app.services.handlers.validation import (
     validate_patamar_data,
     validate_sistema_data,
     validate_cluster_files,
+    validate_cluster_file,
+    validate_installed_capacity_file,
+    validate_ftm_file,
+    validate_average_wind_file,
 )
 
 
@@ -217,7 +221,33 @@ class GenerationHandler:
             self._tmpuow,
         )
         valid_clusters = validate_cluster_files(self._clustersuow)
-        valid = all([valid_patamar, valid_sistema, valid_clusters])
+        valid = all(
+            [
+                valid_patamar,
+                valid_sistema,
+                valid_clusters,
+            ]
+        )
+        if not valid:
+            Log.log().error(
+                "Validação dos arquivos não concluída com sucesso."
+            )
+            return valid
+        valid_cluster = validate_cluster_file(self._clustersuow)
+        valid_installed_capacities = validate_installed_capacity_file(
+            self._clustersuow
+        )
+        valid_ftms = validate_ftm_file(self._clustersuow)
+        valid_average_wind = validate_average_wind_file(self._clustersuow)
+        valid = all(
+            [
+                valid,
+                valid_cluster,
+                valid_installed_capacities,
+                valid_ftms,
+                valid_average_wind,
+            ]
+        )
         if not valid:
             Log.log().error(
                 "Validação dos arquivos não" + " concluída com sucesso."

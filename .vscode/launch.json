@@ -11,7 +11,7 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "justMyCode": true,
-            "args": ["geradeck", "--clusters", "examples/ne1s1", "--deck", "examples/deck_newave_2021_05.zip"]
+            "args": ["geradeck", "--clusters", "examples/clusters", "examples/deck_newave_base.zip"]
         }
     ]
 }
