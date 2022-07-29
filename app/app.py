@@ -3,7 +3,19 @@ import tempfile
 import os
 from app.services.handlers.generation import generate, validate
 
-DEFAULT_CLUSTERS_DIR = "."
+
+DEFAULT_CLUSTERS_PATH_FILE = "CAMINHO-DECK"
+
+
+def __read_clusters_path():
+    path = "."
+    CLUSTERS_PATH_FILE = os.path.join(
+        os.getenv("APP_BASEDIR"), DEFAULT_CLUSTERS_PATH_FILE
+    )
+    if os.path.isfile(CLUSTERS_PATH_FILE):
+        with open(CLUSTERS_PATH_FILE, "r") as clusterspath:
+            path = clusterspath.read().strip()
+    return path
 
 
 @click.group()
@@ -18,7 +30,7 @@ def cli():
 @click.command("validaarquivos")
 @click.option(
     "--clusters",
-    default=DEFAULT_CLUSTERS_DIR,
+    default=None,
     help="diretório com os arquivos resultantes da clusterização",
 )
 @click.argument(
@@ -31,6 +43,8 @@ def validatefiles(clusters, deck):
 
     DECK: arquivos de entrada do NEWAVE comprimidos em um .zip
     """
+    if clusters is None:
+        clusters = __read_clusters_path()
     os.environ["CLUSTERSDIR"] = clusters
     os.environ["DECK"] = deck
     with tempfile.TemporaryDirectory() as tmpdirname:
@@ -41,7 +55,7 @@ def validatefiles(clusters, deck):
 @click.command("geradeck")
 @click.option(
     "--clusters",
-    default=DEFAULT_CLUSTERS_DIR,
+    default=None,
     help="diretório com os arquivos resultantes da clusterização",
 )
 @click.argument(
@@ -54,6 +68,8 @@ def generatedeck(clusters, deck):
 
     DECK: arquivos de entrada do NEWAVE comprimidos em um .zip
     """
+    if clusters is None:
+        clusters = __read_clusters_path()
     os.environ["CLUSTERSDIR"] = clusters
     os.environ["DECK"] = deck
     with tempfile.TemporaryDirectory() as tmpdirname:
