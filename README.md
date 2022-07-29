@@ -6,7 +6,7 @@ Módulo de geração de decks, parte da aplicação responsável por processar d
 
 Este módulo deve ser instalado a partir dos scripts fornecidos no repositório. Este é copiado para um diretório temporário do sistema, onde o ambiente é configurado e as dependências são instaladas. Para isto, basta executar:
 ```sh
-./install.sh
+sudo ./install.sh
 ```
 
 O script de instalação é aberto e pode ser modificado para atender as necessidades do usuário.
@@ -17,17 +17,7 @@ Para o uso da aplicação é necessário ter uma instalação local do `python3`
 
 Caso o script de instalação não detecte a instalação do Python, este irá interromper sua execução. Caso haja problemas com o pacote de criação de ambientes virtuais, será exibido o erro, que na maioria das distribuições orienta o comando necessário para instalação.
 
-Uma das etapas finais do script é copiar o executável que serve de atalho para a aplicação para um diretório no `PATH` do sistema. Isto pode ser personalizado por cada usuário final, sendo que o valor default é em `$HOME/bin`.
-
-```bash
-# Copies the executable to a folder in the system's PATH
-[ ! -d $HOME/bin ] && mkdir $HOME/bin
-EXECPATH=$HOME/bin/eolicas-newave-deck
-echo "Copiando executável para ${EXECPATH}" 
-cp eolicas-newave-deck $EXECPATH
-```
-
-**IMPORTANTE:** O diretório `$HOME/bin` foi escolhido por padrão. Para que a aplicação funcione plenamente é necessário que este seja adicionado ao `PATH` do sistema, ou que o script de instalação seja editado para que o executável seja posicionado em um diretório que esteja no `PATH`. Caso a primeira opção seja escolhida, isto pode ser feito editando o arquivo `~/.bashrc`, como mostrado [neste link](https://askubuntu.com/questions/60218/how-to-add-a-directory-to-the-path).
+Uma das etapas finais do script é copiar o executável que serve de atalho para a aplicação para um diretório no `PATH` do sistema. Isto pode ser personalizado por cada usuário final, sendo que o valor default é em `/usr/bin`.
 
 ## Exemplos de Uso
 
@@ -138,5 +128,5 @@ Informações mais detalhadas sobre o uso da aplicação podem ser encontradas n
 
 Caso seja desejado eliminar os arquivos de instalação do módulo, pode ser usado o script de desinstalação, existente no mesmo repositório:
 ```sh
-./uninstall.sh
+sudo ./uninstall.sh
 ```
