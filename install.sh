@@ -19,10 +19,10 @@ fi
 
 # Creates installation directory in /tmp
 echo "Criando diretório de instalação..." 
-TMPDIR=$(dirname $(mktemp -u))
-INSTALLPARENTDIR=${TMPDIR}/eolicas-newave
+USERINSTALLDIR=/usr/lib
+INSTALLPARENTDIR=${USERINSTALLDIR}/eolicas-newave
 [ ! -d $INSTALLPARENTDIR ] && mkdir $INSTALLPARENTDIR
-INSTALLDIR=${TMPDIR}/eolicas-newave/deck
+INSTALLDIR=${USERINSTALLDIR}/eolicas-newave/deck
 [ ! -d $INSTALLDIR ] && mkdir $INSTALLDIR
 
 # Copies necessary files
@@ -66,8 +66,7 @@ else
 fi
 
 # Copies the executable to a folder in the system's PATH
-[ ! -d $HOME/bin ] && mkdir $HOME/bin
-EXECPATH=$HOME/bin/eolicas-newave-deck
+EXECPATH=/usr/bin/eolicas-newave-deck
 echo "Copiando executável para ${EXECPATH}" 
 cp eolicas-newave-deck $EXECPATH
 
