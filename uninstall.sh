@@ -1,7 +1,7 @@
 #! /bin/bash
 
 TMPDIR=$(dirname $(mktemp -u))
-INSTALLDIR=${TMPDIR}/eolicas-newave-deck
+INSTALLDIR=${TMPDIR}/eolicas-newave/deck
 echo "Removendo arquivos da instalação em ${INSTALLDIR}" 
 [ -d $INSTALLDIR ] && rm -r $INSTALLDIR
 

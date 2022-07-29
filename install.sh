@@ -20,7 +20,9 @@ fi
 # Creates installation directory in /tmp
 echo "Criando diretório de instalação..." 
 TMPDIR=$(dirname $(mktemp -u))
-INSTALLDIR=${TMPDIR}/eolicas-newave-deck
+INSTALLPARENTDIR=${TMPDIR}/eolicas-newave
+[ ! -d $INSTALLPARENTDIR ] && mkdir $INSTALLPARENTDIR
+INSTALLDIR=${TMPDIR}/eolicas-newave/deck
 [ ! -d $INSTALLDIR ] && mkdir $INSTALLDIR
 
 # Copies necessary files
