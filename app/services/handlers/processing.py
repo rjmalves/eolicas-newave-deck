@@ -95,6 +95,7 @@ def process_dger_data(
             )
             return None
         data = messages.DgerData(
+            dger.mes_inicio_pre_estudo,
             dger.mes_inicio_estudo,
             dger.ano_inicio_estudo,
             dger.num_anos_pre_estudo,
@@ -173,30 +174,59 @@ def generate_eolicacadastro(
         rca.quantidade_aerogeradores = 1
         file.append_registro(rca)
     # Adds EOLICA-CONJUNTO-AEROGERADORES-POTENCIAEFETIVA-PERIODO
-    years = [command.year + i for i in range(command.study_horizon)]
-    initial_months = [datetime(command.year, command.month, 1)] + [
-        datetime(y, 1, 1) for y in years[1:]
-    ]
+    # TODO - Reabilitar quando o NEWAVE tiver suporte para pré-estudo
+    # neste aspecto. Atualmente da erro por não tolerar períodos anteriores.
+    # pre_study_years = [
+    #     command.year + i for i in range(-command.pre_study_horizon, 0)
+    # ]
+    pre_study_years = []
+    study_post_years = [command.year + i for i in range(command.study_horizon)]
+    initial_months = (
+        [datetime(y, 1, 1) for y in pre_study_years]
+        + [datetime(command.year, command.month, 1)]
+        + [datetime(y, 1, 1) for y in study_post_years[1:]]
+    )
     final_months = (
-        [datetime(command.year, 12, 1)]
-        + [datetime(y, 12, 1) for y in years[1:-1]]
-        + [datetime(years[-1] + command.post_study_horizon, 12, 1)]
+        [datetime(y, 12, 1) for y in pre_study_years]
+        + [datetime(command.year, 12, 1)]
+        + [datetime(y, 12, 1) for y in study_post_years[1:-1]]
+        + [datetime(study_post_years[-1] + command.post_study_horizon, 12, 1)]
     )
     for idx, line in clusters.iterrows():
+        last_cluster_capacity = (
+            installed_capacity.loc[
+                (installed_capacity["cluster"] == str(line["cluster"])),
+                "capacidade_instalada",
+            ]
+            .sort_index()
+            .tolist()[-1]
+        )
+        ended = False
         for im, fm in zip(initial_months, final_months):
             rpe = RegistroEolicaConjuntoAerogeradoresPotenciaEfetiva()
             rpe.codigo_eolica = idx + 1
             rpe.indice_conjunto = 1
             rpe.periodo_inicial = im
             rpe.periodo_final = fm
-            rpe.potencia_efetiva = float(
-                installed_capacity.loc[
-                    (installed_capacity["cluster"] == str(line["cluster"]))
-                    & (installed_capacity["data_hora"] == im),
-                    "capacidade_instalada",
-                ]
-            )
+            capacity_candidate = installed_capacity.loc[
+                (installed_capacity["cluster"] == str(line["cluster"]))
+                & (installed_capacity["data_hora"] == im),
+                "capacidade_instalada",
+            ]
+            if capacity_candidate.empty:
+                Log.log().warning(
+                    f"Não existe capacidade instalada para o cluster "
+                    + f"{str(line['cluster'])} - período {im.strftime('%m/%Y')}."
+                    + f" Usando o último valor {[last_cluster_capacity]}"
+                )
+                capacity_candidate = last_cluster_capacity
+                rpe.periodo_final = final_months[-1]
+                ended = True
+            rpe.potencia_efetiva = float(capacity_candidate)
             file.append_registro(rpe)
+            # If the end of the horizon has been reached
+            if ended:
+                break
     with nw_uow:
         nw_uow.newave.set_eolicacadastro(file)
 

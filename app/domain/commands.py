@@ -38,8 +38,19 @@ class ProcessPatamarData:
 
 
 @dataclass
+class ValidateDgerData:
+    pass
+
+
+@dataclass
 class ValidateSistemaData:
     windblock: int
+
+
+@dataclass
+class ValidateInstalledCapacityData:
+    initial_year: int
+    final_year: int
 
 
 @dataclass
@@ -49,6 +60,7 @@ class ProcessSistemaData:
 
 @dataclass
 class GenerateEolicaCadastro:
+    pre_study_month: int
     month: int
     year: int
     pre_study_horizon: int

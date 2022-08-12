@@ -4,6 +4,7 @@ import pandas as pd  # type: ignore
 
 @dataclass
 class DgerData:
+    pre_study_month: int
     month: int
     year: int
     pre_study_horizon: int

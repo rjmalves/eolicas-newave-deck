@@ -2,12 +2,34 @@ from app.services.unitofwork.newave import AbstractNewaveUnitOfWork
 from app.services.unitofwork.clusters import AbstractClustersUnitOfWork
 from app.utils.log import Log
 import app.domain.commands as commands
+import pandas as pd  # type: ignore
+from typing import Optional, Tuple
+
+
+def validate_dger_data(
+    command: commands.ValidateDgerData,
+    uow: AbstractNewaveUnitOfWork,
+) -> Tuple[Optional[int], Optional[int]]:
+    Log.log().info("Validando informações do dger.dat")
+    with uow:
+        d = uow.newave.get_dger()
+        initial_year = d.ano_inicio_estudo - d.num_anos_pre_estudo
+        final_year = (
+            d.ano_inicio_estudo + d.num_anos_estudo + d.num_anos_pos_estudo
+        )
+        if initial_year is None or final_year is None:
+            Log.log().error(
+                "Arquivo dger.dat não contém" + "as informações necessárias"
+            )
+        else:
+            Log.log().info("Arquivo dger.dat validado com sucesso")
+            return [initial_year, final_year]
 
 
 def validate_patamar_data(
     command: commands.ValidatePatamarData,
     uow: AbstractNewaveUnitOfWork,
-) -> bool:
+) -> Optional[pd.DataFrame]:
     Log.log().info("Validando informações do patamar.dat")
     with uow:
         p = uow.newave.get_patamar()
@@ -17,7 +39,7 @@ def validate_patamar_data(
                 "Arquivo patamar.dat não contém"
                 + " informações dos patamares de geração"
             )
-            return False
+            return None
         p.usinas_nao_simuladas = df.loc[df["Bloco"] != command.windblock, :]
         winddata = df.loc[df["Bloco"] == command.windblock, :]
         if winddata.empty:
@@ -26,16 +48,16 @@ def validate_patamar_data(
                 + " informações dos patamares de geração eólica"
                 + f" (bloco {command.windblock})"
             )
-            return False
+            return None
         else:
             Log.log().info("Arquivo patamar.dat validado com sucesso")
-            return True
+            return winddata
 
 
 def validate_sistema_data(
     command: commands.ValidateSistemaData,
     uow: AbstractNewaveUnitOfWork,
-) -> bool:
+) -> Optional[pd.DataFrame]:
     Log.log().info("Validando informações do sistema.dat")
     with uow:
         p = uow.newave.get_sistema()
@@ -45,7 +67,7 @@ def validate_sistema_data(
                 "Arquivo sistema.dat não contém"
                 + " informações de geração não simulada"
             )
-            return False
+            return None
         p.geracao_usinas_nao_simuladas = df.loc[
             df["Bloco"] != command.windblock, :
         ]
@@ -56,10 +78,10 @@ def validate_sistema_data(
                 + " informações de geração eólica não simulada"
                 + f" (bloco {command.windblock})"
             )
-            return False
+            return None
         else:
             Log.log().info("Arquivo sistema.dat validado com sucesso")
-            return True
+            return winddata
 
 
 def validate_cluster_files(clusters_uow: AbstractClustersUnitOfWork) -> bool:
@@ -117,6 +139,7 @@ def validate_cluster_file(clusters_uow: AbstractClustersUnitOfWork) -> bool:
 
 
 def validate_installed_capacity_file(
+    command: commands.ValidateInstalledCapacityData,
     clusters_uow: AbstractClustersUnitOfWork,
 ) -> bool:
     try:
@@ -127,6 +150,7 @@ def validate_installed_capacity_file(
             "Erro na leitura do arquivo com "
             + f" capacidades instaladas de clusters: {e}"
         )
+        return False
 
     colunas = ["cluster", "capacidade_instalada", "data_hora"]
     if not all([c in installed_capacity.columns for c in colunas]):
@@ -136,6 +160,18 @@ def validate_installed_capacity_file(
         )
         return False
     else:
+        dt = pd.to_datetime(installed_capacity["data_hora"], format="%Y-%m-%d")
+        if command.initial_year < dt.min().year:
+            Log.log().warning(
+                "Arquivo com capacidades instaladas de clusters de usinas "
+                + f"começa no ano {dt.min().year} > {command.initial_year}"
+            )
+        if command.final_year > dt.max().year:
+            Log.log().warning(
+                "Arquivo com capacidades instaladas de clusters de usinas "
+                + f"termina no ano {dt.max().year} < {command.final_year} "
+            )
+
         Log.log().info(
             "Arquivo com capacidades instaladas de clusters de usinas "
             + "eólicas validado com sucesso"

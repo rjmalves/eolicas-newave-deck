@@ -18,6 +18,7 @@ from app.services.handlers.processing import (
     generate_eolicageracao,
 )
 from app.services.handlers.validation import (
+    validate_dger_data,
     validate_patamar_data,
     validate_sistema_data,
     validate_cluster_files,
@@ -114,6 +115,7 @@ class GenerationHandler:
 
     def __generate_eolicacadastro(self):
         comando = commands.GenerateEolicaCadastro(
+            self._dger_data.pre_study_month,
             self._dger_data.month,
             self._dger_data.year,
             self._dger_data.pre_study_horizon,
@@ -212,6 +214,10 @@ class GenerationHandler:
 
     def validate(self) -> bool:
         Log.log().info(" ## VALIDAÇÃO DOS ARQUIVOS  ##")
+        initial_year, final_year = validate_dger_data(
+            commands.ValidateDgerData(),
+            self._tmpuow,
+        )
         valid_patamar = validate_patamar_data(
             commands.ValidatePatamarData(self._settings.nonsimulatedblock),
             self._tmpuow,
@@ -223,8 +229,10 @@ class GenerationHandler:
         valid_clusters = validate_cluster_files(self._clustersuow)
         valid = all(
             [
-                valid_patamar,
-                valid_sistema,
+                initial_year is not None,
+                final_year is not None,
+                valid_patamar is not None,
+                valid_sistema is not None,
                 valid_clusters,
             ]
         )
@@ -233,9 +241,14 @@ class GenerationHandler:
                 "Validação dos arquivos não concluída com sucesso."
             )
             return valid
+        assert initial_year is not None
+        assert final_year is not None
+        assert valid_patamar is not None
+        assert valid_sistema is not None
         valid_cluster = validate_cluster_file(self._clustersuow)
         valid_installed_capacities = validate_installed_capacity_file(
-            self._clustersuow
+            commands.ValidateInstalledCapacityData(initial_year, final_year),
+            self._clustersuow,
         )
         valid_ftms = validate_ftm_file(self._clustersuow)
         valid_average_wind = validate_average_wind_file(self._clustersuow)
