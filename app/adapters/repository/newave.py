@@ -11,6 +11,7 @@ from inewave.newave.sistema import Sistema
 from inewave.newave.eolicacadastro import EolicaCadastro
 from inewave.newave.eolicaconfiguracao import EolicaConfiguracao
 from inewave.newave.eolicasubmercado import EolicaSubmercado
+from inewave.newave.eolicaposto import EolicaPosto
 from inewave.newave.eolicafte import EolicaFTE
 from inewave.newave.eolicahistorico import EolicaHistorico
 from inewave.newave.eolicageracao import EolicaGeracao
@@ -57,6 +58,14 @@ class AbstractNewaveRepository(ABC):
 
     @abstractmethod
     def set_eolicacadastro(self, d: EolicaCadastro):
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_eolicaposto(self) -> EolicaPosto:
+        raise NotImplementedError
+
+    @abstractmethod
+    def set_eolicaposto(self, d: EolicaPosto):
         raise NotImplementedError
 
     @abstractmethod
@@ -148,6 +157,12 @@ class FSNewaveRepository(AbstractNewaveRepository):
 
     def set_eolicacadastro(self, d: EolicaCadastro):
         d.escreve_arquivo(self.__path, "eolica-cadastro.csv")
+
+    def get_eolicaposto(self) -> EolicaPosto:
+        return EolicaPosto.le_arquivo(self.__path, "eolica-posto.csv")
+
+    def set_eolicaposto(self, d: EolicaPosto):
+        d.escreve_arquivo(self.__path, "eolica-posto.csv")
 
     def set_eolicaconfiguracao(self, d: EolicaConfiguracao):
         d.escreve_arquivo(self.__path, "eolica-config.csv")

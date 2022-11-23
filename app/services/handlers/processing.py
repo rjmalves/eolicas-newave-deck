@@ -14,40 +14,44 @@ from inewave.newave.eolicacadastro import (
     EolicaCadastro,
 )
 from inewave.newave.modelos.eolicacadastro import (
-    RegistroEolicaCadastro,
-    RegistroEolicaCadastroConjuntoAerogeradores,
-    RegistroEolicaConjuntoAerogeradoresPotenciaEfetiva,
+    RegistroPEECadastro,
+    RegistroPEEPotenciaInstaladaPeriodo,
 )
 from inewave.newave.eolicasubmercado import (
     EolicaSubmercado,
 )
 from inewave.newave.modelos.eolicasubmercado import (
-    RegistroEolicaSubmercado,
+    RegistroPEESubmercado,
 )
-from inewave.newave.eolicaconfiguracao import (
-    EolicaConfiguracao,
-)
+from inewave.newave.eolicaconfiguracao import EolicaConfiguracao
 from inewave.newave.modelos.eolicaconfiguracao import (
-    RegistroEolicaConfiguracao,
+    RegistroPEEConfiguracaoPeriodo,
 )
 from inewave.newave.eolicafte import (
     EolicaFTE,
 )
 from inewave.newave.modelos.eolicafte import (
-    RegistroEolicaFTE,
+    RegistroPEEFTE,
+)
+from inewave.newave.eolicaposto import (
+    EolicaPosto,
+)
+from inewave.newave.modelos.eolicaposto import (
+    RegistroPostoVentoCadastro,
+    RegistroPEEPostoVento,
 )
 from inewave.newave.eolicahistorico import (
     EolicaHistorico,
 )
 from inewave.newave.modelos.eolicahistorico import (
-    RegistroEolicaHistoricoVentoHorizonte,
-    RegistroEolicaHistoricoVento,
+    RegistroHistoricoVentoHorizonte,
+    RegistroHistoricoVento,
 )
 from inewave.newave.eolicageracao import (
     EolicaGeracao,
 )
 from inewave.newave.modelos.eolicageracao import (
-    RegistroEolicaGeracaoPatamar,
+    RegistroPEEGeracaoPatamar,
 )
 
 
@@ -57,13 +61,8 @@ def process_dger_data(
     Log.log().info("Processando informações do dger.dat")
     with uow:
         dger = uow.newave.get_dger()
-        dger.consideracao_media_anual_afluencias = command.parpmodel
-        dger.reducao_automatica_ordem = command.orderreduction
         dger.considera_geracao_eolica = command.generatewind
         dger.penalidade_corte_geracao_eolica = command.windcutpenalty
-        dger.compensacao_correlacao_cruzada = command.crosscorrelation
-        dger.restricao_turbinamento = command.swirlingconstraints
-        dger.restricao_defluencia = command.defluenceconstraints
         if dger.mes_inicio_estudo is None:
             Log.log().error(
                 "Erro no processamento do dger.dat: não foi"
@@ -158,22 +157,13 @@ def generate_eolicacadastro(
             "data_hora"
         ].apply(lambda dt: dt.replace(day=1))
     file = EolicaCadastro(data=RegisterData(DefaultRegister(data="")))
-    # Adds EOLICA-CADASTRO
+    # Adds PEE-CAD
     for idx, line in clusters.iterrows():
-        rc = RegistroEolicaCadastro()
-        rc.codigo_eolica = idx + 1
-        rc.nome_eolica = str(line["cluster"])
-        rc.quantidade_conjuntos = 1
+        rc = RegistroPEECadastro()
+        rc.codigo_pee = idx + 1
+        rc.nome_pee = str(line["cluster"])
         file.append_registro(rc)
-    # Adds EOLICA-CADASTRO-CONJUNTO-AEROGERADORES
-    for idx, line in clusters.iterrows():
-        rca = RegistroEolicaCadastroConjuntoAerogeradores()
-        rca.codigo_eolica = idx + 1
-        rca.indice_conjunto = 1
-        rca.nome_conjunto = str(line["cluster"]) + "_1"
-        rca.quantidade_aerogeradores = 1
-        file.append_registro(rca)
-    # Adds EOLICA-CONJUNTO-AEROGERADORES-POTENCIAEFETIVA-PERIODO
+    # Adds PEE-POT-INST-PER
     # TODO - Reabilitar quando o NEWAVE tiver suporte para pré-estudo
     # neste aspecto. Atualmente da erro por não tolerar períodos anteriores.
     # pre_study_years = [
@@ -203,9 +193,8 @@ def generate_eolicacadastro(
         )
         ended = False
         for im, fm in zip(initial_months, final_months):
-            rpe = RegistroEolicaConjuntoAerogeradoresPotenciaEfetiva()
-            rpe.codigo_eolica = idx + 1
-            rpe.indice_conjunto = 1
+            rpe = RegistroPEEPotenciaInstaladaPeriodo()
+            rpe.codigo_pee = idx + 1
             rpe.periodo_inicial = im
             rpe.periodo_final = fm
             capacity_candidate = installed_capacity.loc[
@@ -222,7 +211,7 @@ def generate_eolicacadastro(
                 capacity_candidate = last_cluster_capacity
                 rpe.periodo_final = final_months[-1]
                 ended = True
-            rpe.potencia_efetiva = float(capacity_candidate)
+            rpe.potencia_instalada = float(capacity_candidate)
             file.append_registro(rpe)
             # If the end of the horizon has been reached
             if ended:
@@ -241,9 +230,10 @@ def generate_eolicasubmercado(
         clusters = clusters_uow.clusters.get_clusters()
     file = EolicaSubmercado(data=RegisterData(DefaultRegister(data="")))
     for idx, line in clusters.iterrows():
-        r = RegistroEolicaSubmercado()
-        r.codigo_eolica = idx + 1
+        r = RegistroPEESubmercado()
+        r.codigo_pee = idx + 1
         r.codigo_submercado = int(line["submercado"])
+        print(r.codigo_pee, r.codigo_submercado)
         file.append_registro(r)
     with nw_uow:
         nw_uow.newave.set_eolicasubmercado(file)
@@ -262,8 +252,8 @@ def generate_eolicaconfig(
     initial_month = datetime(command.year, command.month, 1)
     final_month = datetime(years[-1] + command.post_study_horizon, 12, 1)
     for idx, _ in clusters.iterrows():
-        r = RegistroEolicaConfiguracao()
-        r.codigo_eolica = idx + 1
+        r = RegistroPEEConfiguracaoPeriodo()
+        r.codigo_pee = idx + 1
         r.data_inicial_estado_operacao = initial_month
         r.data_final_estado_operacao = final_month
         r.estado_operacao = "centralizado"
@@ -290,10 +280,10 @@ def generate_eolicafte(
         1,
     )
     for _, line in ftm.iterrows():
-        r = RegistroEolicaFTE()
-        rc = eolicacadastro.eolica_cadastro(nome_eolica=str(line["cluster"]))
-        assert isinstance(rc, RegistroEolicaCadastro)
-        r.codigo_eolica = rc.codigo_eolica
+        r = RegistroPEEFTE()
+        rc = eolicacadastro.pee_cad(nome_pee=str(line["cluster"]))
+        assert isinstance(rc, RegistroPEECadastro)
+        r.codigo_pee = rc.codigo_pee
         r.data_inicial = initial_month
         r.data_final = final_month
         r.coeficiente_linear = float(line["b0"])
@@ -301,6 +291,32 @@ def generate_eolicafte(
         file.append_registro(r)
     with nw_uow:
         nw_uow.newave.set_eolicafte(file)
+
+
+def generate_eolicaposto(
+    command: commands.GenerateEolicaPosto,
+    nw_uow: AbstractNewaveUnitOfWork,
+    clusters_uow: AbstractClustersUnitOfWork,
+):
+    Log.log().info("Gerando arquivo eolica-posto.csv")
+    with clusters_uow:
+        clusters = clusters_uow.clusters.get_clusters()
+    file = EolicaPosto(data=RegisterData(DefaultRegister(data="")))
+
+    for idx, line in clusters.iterrows():
+        rc = RegistroPostoVentoCadastro()
+        rc.codigo_posto = idx + 1
+        rc.nome_posto = str(line["cluster"])
+        file.append_registro(rc)
+
+    for idx, line in clusters.iterrows():
+        rp = RegistroPEEPostoVento()
+        rp.codigo_pee = idx + 1
+        rp.codigo_posto = idx + 1
+        file.append_registro(rp)
+
+    with nw_uow:
+        nw_uow.newave.set_eolicaposto(file)
 
 
 def generate_eolicahistorico(
@@ -326,22 +342,22 @@ def generate_eolicahistorico(
         :,
     ]
 
-    rh = RegistroEolicaHistoricoVentoHorizonte()
+    rh = RegistroHistoricoVentoHorizonte()
     rh.data_inicial = first_january
     rh.data_final = last_january
     file.append_registro(rh)
 
     for _, clusterline in clusters.iterrows():
         clustername = str(clusterline["cluster"])
-        rc = eolicacadastro.eolica_cadastro(nome_eolica=clustername)
-        assert isinstance(rc, RegistroEolicaCadastro)
-        code = rc.codigo_eolica
+        rc = eolicacadastro.pee_cad(nome_pee=clustername)
+        assert isinstance(rc, RegistroPEECadastro)
+        code = rc.codigo_pee
         clusterhistory = considered_history.loc[
             considered_history["cluster"] == clustername, :
         ]
         for _, line in clusterhistory.iterrows():
-            r = RegistroEolicaHistoricoVento()
-            r.codigo_eolica = code
+            r = RegistroHistoricoVento()
+            r.codigo_posto = code
             r.data_inicial = line["data_hora"]
             r.data_final = line["data_hora"] + relativedelta(months=1)
             r.velocidade = line["vento"]
@@ -392,11 +408,13 @@ def generate_eolicageracao(
 
     for _, clusterline in clusters.iterrows():
         clustername = str(clusterline["cluster"])
-        rc = eolicacadastro.eolica_cadastro(nome_eolica=clustername)
-        assert isinstance(rc, RegistroEolicaCadastro)
-        code = rc.codigo_eolica
-        rs = eolicasubmercado.eolica_submercado(codigo_eolica=code)
-        assert isinstance(rs, RegistroEolicaSubmercado)
+        rc = eolicacadastro.pee_cad(nome_pee=clustername)
+        assert isinstance(rc, RegistroPEECadastro)
+        code = rc.codigo_pee
+        rs = eolicasubmercado.pee_subm(codigo_pee=code)
+        print(code, rs)
+        print(eolicasubmercado.pee_subm())
+        assert isinstance(rs, RegistroPEESubmercado)
         sub = rs.codigo_submercado
         df = blockdepths.copy()
         df_sub = df.loc[df["Subsistema"] == sub, MONTHS + ["Ano"]]
@@ -409,8 +427,8 @@ def generate_eolicageracao(
             for m, month in enumerate(MONTHS, start=1):
                 for b in blocks:
                     d = datetime(year=year, month=m, day=1)
-                    r = RegistroEolicaGeracaoPatamar()
-                    r.codigo_eolica = code
+                    r = RegistroPEEGeracaoPatamar()
+                    r.codigo_pee = code
                     r.data_inicial = d
                     r.data_final = d
                     r.indice_patamar = b

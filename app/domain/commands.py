@@ -18,13 +18,8 @@ class AddFileToZip:
 
 @dataclass
 class ProcessDgerData:
-    parpmodel: int
-    orderreduction: int
     generatewind: int
     windcutpenalty: float
-    crosscorrelation: int
-    swirlingconstraints: int
-    defluenceconstraints: int
 
 
 @dataclass
@@ -70,6 +65,11 @@ class GenerateEolicaCadastro:
 
 @dataclass
 class GenerateEolicaSubmercado:
+    pass
+
+
+@dataclass
+class GenerateEolicaPosto:
     pass
 
 

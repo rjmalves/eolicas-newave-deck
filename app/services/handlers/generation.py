@@ -14,6 +14,7 @@ from app.services.handlers.processing import (
     generate_eolicasubmercado,
     generate_eolicaconfig,
     generate_eolicafte,
+    generate_eolicaposto,
     generate_eolicahistorico,
     generate_eolicageracao,
 )
@@ -91,13 +92,8 @@ class GenerationHandler:
 
     def process_deck_data(self):
         dger_command = commands.ProcessDgerData(
-            self._settings.parpmodel,
-            self._settings.orderreduction,
             self._settings.generatewind,
             self._settings.windcutpenalty,
-            self._settings.crosscorrelation,
-            self._settings.swirlingconstraints,
-            self._settings.defluenceconstraints,
         )
         patamar_command = commands.ProcessPatamarData(
             self._settings.nonsimulatedblock
@@ -148,6 +144,10 @@ class GenerationHandler:
         )
         generate_eolicafte(comando, self._tmpuow, self._clustersuow)
 
+    def __generate_eolicaposto(self):
+        comando = commands.GenerateEolicaPosto()
+        generate_eolicaposto(comando, self._tmpuow, self._clustersuow)
+
     def __generate_eolicahistorico(self):
         comando = commands.GenerateEolicaHistorico()
         generate_eolicahistorico(comando, self._tmpuow, self._clustersuow)
@@ -169,6 +169,7 @@ class GenerationHandler:
         self.__generate_eolicasubmercado()
         self.__generate_eolicaconfig()
         self.__generate_eolicafte()
+        self.__generate_eolicaposto()
         self.__generate_eolicahistorico()
         self.__generate_eolicageracao()
 

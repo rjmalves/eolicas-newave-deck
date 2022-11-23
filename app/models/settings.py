@@ -18,19 +18,8 @@ class Settings(metaclass=Singleton):
         self.average_wind_file = getenv("ARQUIVO_VENTO_MEDIO")
         # Input files - NEWAVE
         self.caso_file = getenv("ARQUIVO_CASO")
-        self.parpmodel = int(getenv("OPCAO_MODELO_PARP"))
-        self.orderreduction = int(getenv("OPCAO_REDUCAO_AUTOMATICA_ORDEM"))
         self.generatewind = int(getenv("CONSIDERA_GERACAO_EOLICA"))
         self.windcutpenalty = float(getenv("PENALIDADE_CORTE_GERACAO_EOLICA"))
-        self.crosscorrelation = int(
-            getenv("OPCAO_COMPENSACAO_CORRELACAO_CRUZADA")
-        )
-        self.swirlingconstraints = int(
-            getenv("CONSIDERA_RESTRICOES_TURBINAMENTO")
-        )
-        self.defluenceconstraints = int(
-            getenv("CONSIDERA_RESTRICOES_DEFLUENCIA")
-        )
         self.nonsimulatedblock = int(getenv("BLOCO_NAO_SIMULADAS_EOLICA"))
         # Output files - NEWAVE
         self.static_file_path = "app/static"
