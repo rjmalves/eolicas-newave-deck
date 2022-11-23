@@ -28,5 +28,6 @@ class Settings(metaclass=Singleton):
         self.eolicasubmercado_file = "eolica-submercado.csv"
         self.eolicaconfig_file = "eolica-config.csv"
         self.eolicafte_file = "eolica-fte.csv"
+        self.eolicaposto_file = "eolica-posto.csv"
         self.histventos_file = "hist-ventos.csv"
         self.eolicageracao_file = "eolica-geracao.csv"

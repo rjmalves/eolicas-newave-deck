@@ -192,6 +192,7 @@ class GenerationHandler:
                 self._settings.eolicasubmercado_file,
                 self._settings.eolicaconfig_file,
                 self._settings.eolicafte_file,
+                self._settings.eolicaposto_file,
                 self._settings.histventos_file,
                 self._settings.eolicageracao_file,
             ]
