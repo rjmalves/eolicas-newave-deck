@@ -3,6 +3,7 @@ from dateutil.relativedelta import relativedelta  # type: ignore
 from app.services.unitofwork.newave import AbstractNewaveUnitOfWork
 from app.services.unitofwork.clusters import AbstractClustersUnitOfWork
 from app.utils.log import Log
+import numpy as np  # type: ignore
 import pandas as pd  # type: ignore
 from typing import Tuple, Optional
 import app.domain.messages as messages
@@ -169,19 +170,20 @@ def generate_eolicacadastro(
     # pre_study_years = [
     #     command.year + i for i in range(-command.pre_study_horizon, 0)
     # ]
-    pre_study_years = []
-    study_post_years = [command.year + i for i in range(command.study_horizon)]
-    initial_months = (
-        [datetime(y, 1, 1) for y in pre_study_years]
-        + [datetime(command.year, command.month, 1)]
-        + [datetime(y, 1, 1) for y in study_post_years[1:]]
+    initial_month = datetime(command.year, command.month, 1)
+    final_month = datetime(command.year + command.study_horizon - 1, 12, 1)
+    initial_post_study = datetime(command.year + command.study_horizon, 1, 1)
+    final_post_study = datetime(
+        command.year + command.study_horizon + command.post_study_horizon,
+        12,
+        1,
     )
-    final_months = (
-        [datetime(y, 12, 1) for y in pre_study_years]
-        + [datetime(command.year, 12, 1)]
-        + [datetime(y, 12, 1) for y in study_post_years[1:-1]]
-        + [datetime(study_post_years[-1] + command.post_study_horizon, 12, 1)]
-    )
+    initial_months = pd.date_range(
+        initial_month, final_month, freq="MS"
+    ).to_pydatetime()
+    final_months = initial_months
+    initial_months = np.append(initial_months, initial_post_study)
+    final_months = np.append(final_months, final_post_study)
     for idx, line in clusters.iterrows():
         last_cluster_capacity = (
             installed_capacity.loc[
@@ -233,7 +235,6 @@ def generate_eolicasubmercado(
         r = RegistroPEESubmercado()
         r.codigo_pee = idx + 1
         r.codigo_submercado = int(line["submercado"])
-        print(r.codigo_pee, r.codigo_submercado)
         file.append_registro(r)
     with nw_uow:
         nw_uow.newave.set_eolicasubmercado(file)
@@ -412,8 +413,6 @@ def generate_eolicageracao(
         assert isinstance(rc, RegistroPEECadastro)
         code = rc.codigo_pee
         rs = eolicasubmercado.pee_subm(codigo_pee=code)
-        print(code, rs)
-        print(eolicasubmercado.pee_subm())
         assert isinstance(rs, RegistroPEESubmercado)
         sub = rs.codigo_submercado
         df = blockdepths.copy()
