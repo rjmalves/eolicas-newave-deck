@@ -18,8 +18,7 @@ else
 fi
 
 # Creates installation directory in /tmp
-echo "Criando diretório de instalação..." 
-USERINSTALLDIR=/usr/lib
+echo "Criando diretório de instalação..."
 INSTALLDIR=${USERINSTALLDIR}/eolicas-newave/deck
 [ ! -d $INSTALLDIR ] && mkdir -p $INSTALLDIR
 
@@ -64,9 +63,10 @@ else
 fi
 
 # Copies the executable to a folder in the system's PATH
-EXECPATH=/usr/bin/eolicas-newave-deck
 echo "Copiando executável para ${EXECPATH}" 
+EXECPATH=/usr/bin/eolicas-newave-deck
 cp eolicas-newave-deck $EXECPATH
+sed -i "s;fillinstalldir;${USERINSTALLDIR};" $EXECPATH
 
 # Deactivates venv
 echo "Finalizando instalação..."
