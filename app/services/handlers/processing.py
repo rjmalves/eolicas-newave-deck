@@ -257,7 +257,7 @@ def generate_eolicaconfig(
         r.codigo_pee = idx + 1
         r.data_inicial_estado_operacao = initial_month
         r.data_final_estado_operacao = final_month
-        r.estado_operacao = "centralizado"
+        r.estado_operacao = "fixo"
         file.append_registro(r)
     with nw_uow:
         nw_uow.newave.set_eolicaconfiguracao(file)
