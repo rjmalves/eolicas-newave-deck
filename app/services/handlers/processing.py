@@ -122,8 +122,10 @@ def process_patamar_data(
         df = p.usinas_nao_simuladas
         assert df is not None
         p.usinas_nao_simuladas = df.loc[
-            (df["Subsistema"].isin(submarkets))
-            & (df["Bloco"] != command.windblock),
+            ~(
+                (df["Subsistema"].isin(submarkets))
+                & (df["Bloco"] == command.windblock)
+            ),
             :,
         ]
         uow.newave.set_patamar(p)
@@ -145,9 +147,12 @@ def process_sistema_data(
         p = uow.newave.get_sistema()
         df = p.geracao_usinas_nao_simuladas
         assert df is not None
+
         p.geracao_usinas_nao_simuladas = df.loc[
-            (df["Subsistema"].isin(submarkets))
-            & (df["Bloco"] != command.windblock),
+            ~(
+                (df["Subsistema"].isin(submarkets))
+                & (df["Bloco"] == command.windblock)
+            ),
             :,
         ]
         uow.newave.set_sistema(p)
