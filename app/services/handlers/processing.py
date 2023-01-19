@@ -109,15 +109,23 @@ def process_dger_data(
 def process_patamar_data(
     command: commands.ProcessPatamarData,
     uow: AbstractNewaveUnitOfWork,
+    clusters_uow: AbstractClustersUnitOfWork,
 ) -> Tuple[int, messages.PatamarData]:
     Log.log().info("Processando informações do patamar.dat")
+    with clusters_uow:
+        clusters = clusters_uow.clusters.get_clusters()
+        submarkets = [int(s) for s in clusters["submercado"].unique()]
     with uow:
         p = uow.newave.get_patamar()
         num_pat = p.numero_patamares
         assert num_pat is not None
         df = p.usinas_nao_simuladas
         assert df is not None
-        p.usinas_nao_simuladas = df.loc[df["Bloco"] != command.windblock, :]
+        p.usinas_nao_simuladas = df.loc[
+            (df["Subsistema"].isin(submarkets))
+            & (df["Bloco"] != command.windblock),
+            :,
+        ]
         uow.newave.set_patamar(p)
         return num_pat, messages.PatamarData(
             df.loc[df["Bloco"] == command.windblock, :]
@@ -127,14 +135,20 @@ def process_patamar_data(
 def process_sistema_data(
     command: commands.ProcessSistemaData,
     uow: AbstractNewaveUnitOfWork,
+    clusters_uow: AbstractClustersUnitOfWork,
 ) -> messages.SistemaData:
     Log.log().info("Processando informações do sistema.dat")
+    with clusters_uow:
+        clusters = clusters_uow.clusters.get_clusters()
+        submarkets = [int(s) for s in clusters["submercado"].unique()]
     with uow:
         p = uow.newave.get_sistema()
         df = p.geracao_usinas_nao_simuladas
         assert df is not None
         p.geracao_usinas_nao_simuladas = df.loc[
-            df["Bloco"] != command.windblock, :
+            (df["Subsistema"].isin(submarkets))
+            & (df["Bloco"] != command.windblock),
+            :,
         ]
         uow.newave.set_sistema(p)
         return messages.SistemaData(

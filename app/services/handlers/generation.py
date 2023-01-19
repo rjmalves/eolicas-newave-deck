@@ -95,18 +95,18 @@ class GenerationHandler:
             self._settings.generatewind,
             self._settings.windcutpenalty,
         )
+        self._dger_data = process_dger_data(dger_command, self._tmpuow)
         patamar_command = commands.ProcessPatamarData(
             self._settings.nonsimulatedblock
         )
         sistema_command = commands.ProcessSistemaData(
             self._settings.nonsimulatedblock
         )
-        self._dger_data = process_dger_data(dger_command, self._tmpuow)
         self._patamar_count, self._patamar_data = process_patamar_data(
-            patamar_command, self._tmpuow
+            patamar_command, self._tmpuow, self._clustersuow
         )
         self._sistema_data = process_sistema_data(
-            sistema_command, self._tmpuow
+            sistema_command, self._tmpuow, self._clustersuow
         )
 
     def __generate_eolicacadastro(self):
