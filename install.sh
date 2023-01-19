@@ -1,6 +1,6 @@
 #! /bin/bash
 
-VERSION="1.1.1"
+VERSION="1.2.1"
 DATE="19/01/2022"
 
 echo "Instalação da aplicação eolicas-newave-deck"
